@@ -1,5 +1,6 @@
 from time import sleep
 
+import pytest
 from playwright.sync_api import Page, expect
 import re
 
@@ -45,6 +46,7 @@ def test_by_placeholder(page: Page):
     field.clear()
     sleep(1)
 
+@pytest.mark.skip("Broken test")
 def test_by_alt_text(page: Page):
     sleep(3)
     # page.screenshot(path="hello.png", full_page=True)

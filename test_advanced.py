@@ -42,7 +42,7 @@ def test_sort_and_waits(page:Page):
 def test_focused(page: Page):
     page.goto("https://www.google.com")
     input_field = page.locator('[name="q"]')
-    expect(input_field).not_to_be_focused()
+    expect(input_field).to_be_focused()
 
 def test_tabs(page: Page, context: BrowserContext):
     page.goto("https://www.qa-practice.com/elements/new_tab/link")

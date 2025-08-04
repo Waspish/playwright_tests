@@ -1,6 +1,8 @@
 from time import sleep
 
+import allure
 import pytest
+from allure_commons.types import AttachmentType
 from playwright.sync_api import Page, expect
 import re
 
@@ -18,12 +20,19 @@ def apply_stealth(page):
     })
 
 def test_chrome(page: Page):
-    apply_stealth(page)
-    page.goto('https://www.google.com/')
-    search_field = page.get_by_role('combobox')
-    search_field.fill('cat')
-    page.keyboard.press('Enter')
-    expect(page).to_have_title(re.compile('^cat'))
+    try:
+        apply_stealth(page)
+        page.goto('https://www.google.com/')
+        search_field = page.get_by_role('combobox')
+        search_field.fill('cat')
+        page.keyboard.press('Enter')
+        expect(page).to_have_title(re.compile('^cat'))
+    except Exception as e:
+        screenshot = page.screenshot(full_page=True)
+        allure.attach(screenshot, name="Mistake_test_chrome", attachment_type=allure.attachment_type.PNG)
+        raise e
+
+
 
 def test_by_text(page: Page):
     page.goto("https://www.qa-practice.com/")

@@ -1,10 +1,12 @@
 from time import sleep
 
+import pytest
 from idna import ulabel
 from playwright.sync_api import Page, Request, Dialog, Response, expect, Route
 import re
 import json
 
+@pytest.mark.extended
 def test_listen_data(page:Page):
     def handle_request(request: Request):
         print(f"REQUEST: {request.post_data}, {request.url}")
@@ -18,6 +20,7 @@ def test_listen_data(page:Page):
     input_field.fill('qwerty')
     input_field.press('Enter')
 
+@pytest.mark.extended
 def test_catch_response(page: Page):
     page.goto("https://www.airbnb.ru/")
     pop_up = page.get_by_role("dialog")
@@ -34,6 +37,7 @@ def test_catch_response(page: Page):
     pop_up.locator('button:not([aria-label])').click()
     assert response.json()['data'] is not None
 
+@pytest.mark.extended
 def test_pogoda(page: Page):
     def handle_route(route: Route):
         response = route.fetch()
@@ -51,6 +55,7 @@ def test_pogoda(page: Page):
     page.get_by_text("+45").nth(1).wait_for()
     page.locator('[name="query"]').click()
 
+@pytest.mark.extended
 def test_change_req(page:Page):
 
     def change_req(route: Route):

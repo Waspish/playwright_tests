@@ -1,9 +1,10 @@
 import re
 from time import sleep
 
+import pytest
 from playwright.sync_api import Page, expect, BrowserContext, Dialog
 
-
+@pytest.mark.regression
 def test_visible(page: Page):
     page.goto("https://www.qa-practice.com/elements/input/simple")
     req_locator = page.locator('#req_text')
@@ -12,6 +13,7 @@ def test_visible(page: Page):
     page.locator('#req_header').click()
     expect(req_locator).to_be_visible()
 
+@pytest.mark.regression
 def test_enabled_and_select(page:Page):
     page.goto("https://www.qa-practice.com/elements/button/disabled")
     select_state = page.locator("#id_select_state")
@@ -23,6 +25,7 @@ def test_enabled_and_select(page:Page):
     submit_btn.click()
     sleep(2)
 
+@pytest.mark.regression
 def test_input_value(page: Page):
     text = "qwerty"
     page.goto("https://www.qa-practice.com/elements/input/simple")
@@ -30,6 +33,7 @@ def test_input_value(page: Page):
     text_input.fill(text)
     expect(text_input, f"value is not {text}").to_have_value(text)
 
+@pytest.mark.regression
 def test_sort_and_waits(page:Page):
     page.goto("https://magento.softwaretestingboard.com/men/tops-men/jackets-men.html")
     sorter = page.locator("#sorter").first
@@ -39,11 +43,13 @@ def test_sort_and_waits(page:Page):
     expect(page).to_have_url(re.compile('price'))
     print(first_man.inner_text())
 
+@pytest.mark.regression
 def test_focused(page: Page):
     page.goto("https://www.google.com")
     input_field = page.locator('[name="q"]')
     expect(input_field).to_be_focused()
 
+@pytest.mark.regression
 def test_tabs(page: Page, context: BrowserContext):
     page.goto("https://www.qa-practice.com/elements/new_tab/link")
     with context.expect_page() as new_page_event:
@@ -55,6 +61,7 @@ def test_tabs(page: Page, context: BrowserContext):
     new_tab_button = page.get_by_role("link",name="New tab button")
     new_tab_button.click()
 
+@pytest.mark.regression
 def test_hover(page: Page):
     page.goto("https://magento.softwaretestingboard.com/")
     man_locator = page.locator("#ui-id-5")
@@ -64,12 +71,14 @@ def test_hover(page: Page):
     top_locator.hover()
     jackets_locator.click()
 
+@pytest.mark.regression
 def test_d_n_d(page: Page):
     page.goto("https://www.qa-practice.com/elements/dragndrop/boxes")
     rect_draggable = page.locator("#rect-draggable")
     rect_droppable = page.locator("#rect-droppable")
     rect_draggable.drag_to(rect_droppable)
 
+@pytest.mark.regression
 def test_alert(page: Page):
     def cancel_alert(alert: Dialog):
         print(alert.message)

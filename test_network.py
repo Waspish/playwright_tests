@@ -1,7 +1,4 @@
-from time import sleep
-
 import pytest
-from idna import ulabel
 from playwright.sync_api import Page, Request, Dialog, Response, expect, Route
 import re
 import json
@@ -23,8 +20,8 @@ def test_listen_data(page:Page):
 @pytest.mark.extended
 def test_catch_response(page: Page):
     page.goto("https://www.airbnb.ru/")
-    pop_up = page.get_by_role("dialog")
-    pop_up.locator('button:not([aria-label])').click()
+    # pop_up = page.get_by_role("dialog")
+    # pop_up.locator('button:not([aria-label])').click()
     # pop_up.get_by_role('button').nth(1).click()
     with page.expect_response(re.compile('autoSuggestionsRequest')) as response_event:
         page.locator('#search-block-tab-EXPERIENCES').click()
@@ -33,8 +30,8 @@ def test_catch_response(page: Page):
     print(response.url)
     print(response.json()['data'])
     print(response.status)
-    pop_up = page.get_by_role("dialog")
-    pop_up.locator('button:not([aria-label])').click()
+    # pop_up = page.get_by_role("dialog")
+    # pop_up.locator('button:not([aria-label])').click()
     assert response.json()['data'] is not None
 
 @pytest.mark.extended
@@ -67,5 +64,4 @@ def test_change_req(page:Page):
     page.goto('https://www.samsung.com/au/smartphones/galaxy-z/')
     page.locator('[data-di-id="di-id-c9e22f1b-594586ed"]').click()
     page.locator('[for="checkbox-series15p01"]').click()
-    sleep(5)
 

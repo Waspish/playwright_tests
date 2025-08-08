@@ -67,12 +67,12 @@ jobs:
       - name: Install Allure
         run: sudo wget https://github.com/allure-framework/allure2/releases/download/2.34.1/allure-2.34.1.tgz && sudo tar -xzf allure-2.34.1.tgz -C /opt/ && sudo ln -s /opt/allure-2.34.1/bin/allure /usr/bin/allure 
       - name: Generate report
-        run: allure generate -c allure-results -o allure-report
+        run: allure generate -c allure-results -o _site
       - name: Save allure report
         uses: actions/upload-artifact@v4
         with:
-          name: allure-report
-          path: allure-repoer
+          name: _site
+          path: _site
           retention-days: 1
 
   publish-report:
@@ -91,6 +91,7 @@ jobs:
     
  
   
+
 
 
 

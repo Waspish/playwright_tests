@@ -77,26 +77,27 @@ jobs:
 
   publish-report:
     runs-on: ubuntu-latest
-    name: Report publication
     needs: generate-report
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v5
         with:
-          name: _site  # Explicitly specify the artifact name
-          path: _site  # Download to _site directory
-      
-      - name: Verify downloaded files
+          name: allure-report
+          path: ./_site
+  
+      - name: Verify files
         run: ls -la _site
-      
+  
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '_site'  # Point to the directory containing the report
-      
+          path: './_site'
+  
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v3
       
+
 
 
 

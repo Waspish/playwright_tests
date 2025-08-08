@@ -37,6 +37,8 @@ jobs:
         run: pip install -r requirements.txt
       - name: Install Playwright
         run: playwright install
+      - name: Allure-results dir
+        run: mkdir -p allure-results
       - name: Run all tests
         if: "github.event.inputs.deployment_target == 'all'"
         run: pytest --alluredir=allure-results
@@ -96,3 +98,4 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v3
       
+

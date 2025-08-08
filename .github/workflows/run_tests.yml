@@ -89,12 +89,11 @@ jobs:
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v5
-        with:
-          path: _site
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
       
+
 

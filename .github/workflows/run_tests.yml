@@ -71,7 +71,7 @@ jobs:
       - name: Save allure report
         uses: actions/upload-artifact@v4
         with:
-          name: _site
+          name: _site/
           path: _site
           retention-days: 1
 
@@ -81,12 +81,18 @@ jobs:
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v5
+        with:
+          name: _site
+          path: _site
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1.2.9
+        uses: actions/deploy-pages@v4
       
+
 
 
 

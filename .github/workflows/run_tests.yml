@@ -17,7 +17,7 @@ on:
           
 permissions:
   pages: write
-  contents: write
+  contents: read
   id-token: write
       
       
@@ -92,6 +92,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v3
       
+
 
 
 

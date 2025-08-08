@@ -82,21 +82,17 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v5
         with:
-          name: allure-report
-          path: ./_site
-  
-      - name: Verify files
-        run: ls -la _site
-  
+          name: _site
+          path: _site
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './_site'
-  
+          path: '_site'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v3
       
+
 
 
 

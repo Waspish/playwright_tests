@@ -59,6 +59,7 @@ jobs:
          with:
            name: allure-results
            path: allure-results
+           overwrite: true
            retention-days: 1
 
 
@@ -139,6 +140,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
       
+
 
 
 

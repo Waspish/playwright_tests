@@ -78,8 +78,12 @@ jobs:
           python-version: 'pypy3.10' 
       - name: Install dependencies
         run: pip install -r requirements.txt
+      - name: Check Ls Before download
+        run: ls
       - name: Download artifact
         uses: actions/download-artifact@v5
+      - name: Check Ls After download
+        run: ls
       - name: Install Playwright
         run: playwright install
       - name: Run all tests
@@ -98,6 +102,8 @@ jobs:
         if: "github.event.inputs.deployment_target == 'extended'"
         run: pytest -m extended --alluredir=allure-results
         continue-on-error: true
+      - name: Check Ls After TEst run
+        run: ls
       - name: Upload allure results
         uses: actions/upload-artifact@v4
         with:
@@ -140,6 +146,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
       
+
 
 
 

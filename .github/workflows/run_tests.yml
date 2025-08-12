@@ -62,8 +62,6 @@ jobs:
            path: allure-results
            retention-days: 1
 
-
-    
   run-tests:
     runs-on: ubuntu-latest
     name: Run autotests
@@ -85,8 +83,6 @@ jobs:
         with: 
           name: allure-history
           path: allure-results
-      - name: Check Ls After download
-        run: ls
       - name: Install Playwright
         run: playwright install
       - name: Run all tests
@@ -105,8 +101,6 @@ jobs:
         if: "github.event.inputs.deployment_target == 'extended'"
         run: pytest -m extended --alluredir=allure-results
         continue-on-error: true
-      - name: Check Ls After TEst run
-        run: ls
       - name: Upload allure results
         uses: actions/upload-artifact@v4
         with:
@@ -124,6 +118,8 @@ jobs:
         with:
           name: allure-results
           path: allure-results
+      - name: Ls after download
+        run: ls
       - name: Install Java
         uses: actions/setup-java@v4
         with:
@@ -133,6 +129,8 @@ jobs:
         run: sudo wget https://github.com/allure-framework/allure2/releases/download/2.34.1/allure-2.34.1.tgz && sudo tar -xzf allure-2.34.1.tgz -C /opt/ && sudo ln -s /opt/allure-2.34.1/bin/allure /usr/bin/allure 
       - name: Generate report
         run: allure generate -c allure-results -o _site
+      - name: Ls before upload
+        run: ls
       - name: Save allure report
         uses: actions/upload-artifact@v4
         with:
@@ -146,12 +144,15 @@ jobs:
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v5
+      - name: Ls before upload
+        run: ls
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
       
+
 
 
 

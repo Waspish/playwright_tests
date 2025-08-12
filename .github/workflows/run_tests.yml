@@ -111,11 +111,8 @@ jobs:
     name: Generate report
     needs: run-tests
     steps:
-      - name: Download allure results
+      - name: Download all workflow run artifacts
         uses: actions/download-artifact@v5
-        with:
-          name: allure-results
-          path: allure-results
       - name: Install Java
         uses: actions/setup-java@v4
         with:
@@ -144,6 +141,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
       
+
 
 
 

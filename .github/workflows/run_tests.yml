@@ -55,12 +55,10 @@ jobs:
        - run: mkdir allure-results && unzip artifacts.zip -d allure-results
        - run: mkdir old_pages pages_history && unzip pages.zip -d old_pages && tar -xvf old_pages/artifact.tar -C pages_history
        - run: cp pages_history/history/* allure-results && cp -r pages_history/history allure-results
-       - name: Check files before upload
-         run: ls
        - name: Store allure history
          uses: actions/upload-artifact@v4
          with:
-           name: allure-results
+           name: allure-history
            path: allure-results
            retention-days: 1
 
@@ -80,10 +78,13 @@ jobs:
           python-version: 'pypy3.10' 
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Check Ls Before download
-        run: ls
+      - name: Make allure results dir
+        run: mkdir allure-results
       - name: Download artifact
         uses: actions/download-artifact@v5
+        with: 
+          name: allure-history
+          path: allure-results
       - name: Check Ls After download
         run: ls
       - name: Install Playwright
@@ -120,6 +121,9 @@ jobs:
     steps:
       - name: Download all workflow run artifacts
         uses: actions/download-artifact@v5
+        with:
+          name: allure-results
+          path: allure-results
       - name: Install Java
         uses: actions/setup-java@v4
         with:
@@ -148,6 +152,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
       
+
 
 
 

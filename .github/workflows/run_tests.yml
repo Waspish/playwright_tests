@@ -127,6 +127,12 @@ jobs:
         run: sudo wget https://github.com/allure-framework/allure2/releases/download/2.34.1/allure-2.34.1.tgz && sudo tar -xzf allure-2.34.1.tgz -C /opt/ && sudo ln -s /opt/allure-2.34.1/bin/allure /usr/bin/allure 
       - name: Generate report
         run: allure generate -c allure-results -o _site
+      - name: Save updated history
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-history-updated
+          path: _site/history
+          retention-days: 1    
       - name: Save allure report
         uses: actions/upload-artifact@v4
         with:
@@ -143,6 +149,11 @@ jobs:
         with:
           name: _site
           path: _site
+      - name: Download updated history
+        uses: actions/download-artifact@v5
+        with:
+          name: allure-history-updated
+          path: allure-results/history
       - name: Ls before upload
         run: ls
       - name: Upload Pages artifact
@@ -151,6 +162,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
       
+
 
 
 

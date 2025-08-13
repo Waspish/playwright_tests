@@ -96,7 +96,3 @@ def test_by_xpath(page: Page):
     selector = page.locator("//select[@id='id_select_state']")
     selector.select_option("enabled")
     sleep(2)
-
-def test_goober():
-    print(1)
-

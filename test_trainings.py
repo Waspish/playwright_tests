@@ -32,7 +32,7 @@ def test_chrome(page: Page):
 @pytest.mark.smoke
 def test_by_text(page: Page):
     page.goto("https://www.qa-practice.com/")
-    page.get_by_text('Single UI Elements').click()
+    page.get_by_text('Single UI Elements No Man').click()
 
 @pytest.mark.smoke
 def test_by_label(page: Page):

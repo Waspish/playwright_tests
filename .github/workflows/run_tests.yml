@@ -45,7 +45,6 @@ jobs:
             echo "✅ $1 — корректный ZIP"
           }
 
-          # Функция для безопасного парсинга JSON
           get_artifact_id() {
             local name="$1"
             curl -L \
@@ -53,17 +52,7 @@ jobs:
               -H "X-GitHub-Api-Version: 2022-11-28" \
               -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
               "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts?name=$name" \
-              | python3 -c "
-            import sys, json
-            try:
-                data = json.load(sys.stdin)
-                if 'artifacts' in data and data['artifacts']:
-                    print(data['artifacts'][0]['id'])
-                else:
-                    print('')
-            except:
-                print('')
-            "
+              | python3 -c "import sys, json; data=json.load(sys.stdin); print(data['artifacts'][0]['id'] if data.get('artifacts') else '')"
           }
 
           ALLURE_ID=$(get_artifact_id "allure-results")

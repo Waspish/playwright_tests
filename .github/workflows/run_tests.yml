@@ -119,10 +119,10 @@ jobs:
           name: allure-results
           path: allure-results
       - name: Install Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'microsoft'
-          java-version: '21'
+          java-version: '25'
       - name: Install Allure
         run: sudo wget https://github.com/allure-framework/allure2/releases/download/2.34.1/allure-2.34.1.tgz && sudo tar -xzf allure-2.34.1.tgz -C /opt/ && sudo ln -s /opt/allure-2.34.1/bin/allure /usr/bin/allure 
       - name: Generate report

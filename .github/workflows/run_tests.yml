@@ -23,6 +23,8 @@ jobs:
   download-history:
     runs-on: ubuntu-latest
     name: Download history
+    permissions:
+      actions: read
     steps:
       - name: Set up Python environment
         uses: actions/setup-python@v5
@@ -37,7 +39,7 @@ jobs:
             curl -L -s \
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
-              -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts?name=$name" \
               | python3 -c "import sys, json; data = json.load(sys.stdin); artifacts = data.get('artifacts', []); valid = [a for a in artifacts if not a.get('expired', False)]; valid.sort(key=lambda x: x['created_at'], reverse=True); print(valid[0]['id'] if valid else '')"
           }
@@ -51,7 +53,7 @@ jobs:
             curl -L \
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
-              -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts/$ALLURE_ID/zip" \
               -o artifacts.zip
             # Проверяем, что скачали действительно zip

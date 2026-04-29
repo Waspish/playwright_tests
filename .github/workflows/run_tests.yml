@@ -24,11 +24,13 @@ jobs:
     runs-on: ubuntu-latest
     name: Download history
     steps:
-       - name: Set up Python environment
-         uses: actions/setup-python@v6 
-         with:
-           python-version: 'pypy3.10'
-       - run: |
+      - name: Set up Python environment
+        uses: actions/setup-python@v6
+        with:
+          python-version: 'pypy3.10'
+
+      - name: Download artifacts with checks
+        run: |
           set -e
           check_zip() {
             if [ ! -f "$1" ]; then
@@ -43,17 +45,34 @@ jobs:
             echo "✅ $1 — корректный ZIP"
           }
 
-          ALLURE_ID=$(curl -L \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
-            "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts?name=allure-results" \
-            | python3 -c "import sys, json; data=json.load(sys.stdin); print(data['artifacts'][0]['id'] if data['artifacts'] else '')")
+          # Функция для безопасного парсинга JSON
+          get_artifact_id() {
+            local name="$1"
+            curl -L \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
+              "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts?name=$name" \
+              | python3 -c "
+            import sys, json
+            try:
+                data = json.load(sys.stdin)
+                if 'artifacts' in data and data['artifacts']:
+                    print(data['artifacts'][0]['id'])
+                else:
+                    print('')
+            except:
+                print('')
+            "
+          }
 
+          ALLURE_ID=$(get_artifact_id "allure-results")
           if [ -z "$ALLURE_ID" ]; then
-            echo "❌ Артефакт allure-results не найден"
+            echo "❌ Артефакт allure-results не найден или ошибка API"
+            echo "Проверьте токен и наличие артефактов в репозитории Waspish/playwright_tests"
             exit 1
           fi
+          echo "Найден allure-results с ID: $ALLURE_ID"
           curl -L \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -62,17 +81,12 @@ jobs:
             -o artifacts.zip
           check_zip artifacts.zip
 
-          PAGES_ID=$(curl -L \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
-            "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts?name=github-pages" \
-            | python3 -c "import sys, json; data=json.load(sys.stdin); print(data['artifacts'][0]['id'] if data['artifacts'] else '')")
-
+          PAGES_ID=$(get_artifact_id "github-pages")
           if [ -z "$PAGES_ID" ]; then
             echo "⚠️ Артефакт github-pages не найден, продолжаем без истории"
             mkdir -p pages_history/history
           else
+            echo "Найден github-pages с ID: $PAGES_ID"
             curl -L \
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -85,24 +99,24 @@ jobs:
             tar -xvf old_pages/artifact.tar -C pages_history
           fi
 
-          - name: Unpack allure-results
-            run: |
-              mkdir -p allure-results
-              unzip artifacts.zip -d allure-results
-  
-          - name: Copy history if exists
-            run: |
-              if [ -d pages_history/history ]; then
-                cp pages_history/history/* allure-results/ 2>/dev/null || true
-                cp -r pages_history/history allure-results/ 2>/dev/null || true
-              fi
-    
-          - name: Store allure history
-            uses: actions/upload-artifact@v5
-            with:
-              name: allure-history
-              path: allure-results
-              retention-days: 1
+      - name: Unpack allure-results
+        run: |
+          mkdir -p allure-results
+          unzip artifacts.zip -d allure-results
+
+      - name: Copy history if exists
+        run: |
+          if [ -d pages_history/history ]; then
+            cp pages_history/history/* allure-results/ 2>/dev/null || true
+            cp -r pages_history/history allure-results/ 2>/dev/null || true
+          fi
+
+      - name: Store allure history
+        uses: actions/upload-artifact@v5
+        with:
+          name: allure-history
+          path: allure-results
+          retention-days: 1
 
   run-tests:
     runs-on: ubuntu-latest

@@ -30,28 +30,13 @@ jobs:
            python-version: 'pypy3.10'
        - run: |
            set -e
-           # Функция получения ID последнего неистекшего артефакта по имени
            get_artifact_id() {
              local name="$1"
              curl -L -s \
                -H "Accept: application/vnd.github+json" \
                -H "X-GitHub-Api-Version: 2022-11-28" \
                "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts?name=$name" \
-               | python3 -c "
-             import sys, json
-             try:
-                 data = json.load(sys.stdin)
-                 # Отбираем только неистекшие артефакты
-                 valid = [a for a in data.get('artifacts', []) if not a.get('expired', False)]
-                 if not valid:
-                     print('')
-                     sys.exit(0)
-                 # Сортируем по дате создания (новый сверху)
-                 valid.sort(key=lambda x: x['created_at'], reverse=True)
-                 print(valid[0]['id'])
-             except Exception:
-                 print('')
-             "
+               | python3 -c "import sys, json; data = json.load(sys.stdin); artifacts = data.get('artifacts', []); valid = [a for a in artifacts if not a.get('expired', False)]; valid.sort(key=lambda x: x['created_at'], reverse=True); print(valid[0]['id'] if valid else '')"
            }
            ALLURE_ID=$(get_artifact_id "allure-results")
            if [ -z "$ALLURE_ID" ]; then

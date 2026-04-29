@@ -28,7 +28,7 @@ jobs:
          uses: actions/setup-python@v6 
          with:
            python-version: 'pypy3.10'
-       - run:          run: |
+       - run: |
            set -e
            # Функция получения ID последнего неистекшего артефакта по имени
            get_artifact_id() {

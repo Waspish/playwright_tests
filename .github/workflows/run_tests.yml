@@ -113,7 +113,13 @@ jobs:
           fi
           
       - name: Ensure allure-results not empty
-        run: touch allure-results/.placeholder
+        run: |
+          if [ -z "$(ls -A allure-results)" ]; then
+            touch allure-results/.placeholder
+            echo "Папка была пуста, добавлен файл-заглушка .placeholder"
+          else
+            echo "Папка не пуста, пропускаем создание заглушки"
+          fi
         
       - name: Store allure history
         uses: actions/upload-artifact@v4

@@ -122,7 +122,7 @@ jobs:
           rm -rf history_extracted history.zip
 
       - name: Install Java
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v5
         with:
           distribution: 'microsoft'
           java-version: '25'

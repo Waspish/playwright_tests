@@ -18,7 +18,7 @@ permissions:
   pages: write
   contents: read
   id-token: write
-  actions: read      # для скачивания артефактов
+  # actions: read      # для скачивания артефактов
   # actions: write нужен для загрузки артефакта истории, но upload-artifact сам использует GITHUB_TOKEN,
   # достаточно permissions: actions: write? На самом деле для upload-artifact не нужно отдельное permission,
   # действует permissions: contents? Но добавим actions: write для надёжности

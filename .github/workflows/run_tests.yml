@@ -24,83 +24,100 @@ jobs:
     runs-on: ubuntu-latest
     name: Download history
     steps:
-       - name: Set up Python environment
-         uses: actions/setup-python@v6 
-         with:
-           python-version: 'pypy3.10'
-       - run: |
-           set -e
-           get_artifact_id() {
-             local name="$1"
-             curl -L -s \
-               -H "Accept: application/vnd.github+json" \
-               -H "X-GitHub-Api-Version: 2022-11-28" \
-               "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts?name=$name" \
-               | python3 -c "import sys, json; data = json.load(sys.stdin); artifacts = data.get('artifacts', []); valid = [a for a in artifacts if not a.get('expired', False)]; valid.sort(key=lambda x: x['created_at'], reverse=True); print(valid[0]['id'] if valid else '')"
-           }
-           ALLURE_ID=$(get_artifact_id "allure-results")
-           if [ -z "$ALLURE_ID" ]; then
-             echo "Нет актуальных (неистекших) артефактов allure-results. Пропускаем загрузку истории."
-             mkdir -p allure-results
-             touch allure-results/.skip
-           else
-             curl -L \
-               -H "Accept: application/vnd.github+json" \
-               -H "X-GitHub-Api-Version: 2022-11-28" \
-               -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
-               "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts/$ALLURE_ID/zip" \
-               -o artifacts.zip
-           fi
+      - name: Set up Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: 'pypy3.10'
 
-           PAGES_ID=$(get_artifact_id "github-pages")
-           if [ -z "$PAGES_ID" ]; then
-             echo "Нет актуальных артефактов github-pages. Пропускаем загрузку истории страниц."
-             mkdir -p old_pages
-             touch old_pages/.skip
-           else
-             curl -L \
-               -H "Accept: application/vnd.github+json" \
-               -H "X-GitHub-Api-Version: 2022-11-28" \
-               -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
-               "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts/$PAGES_ID/zip" \
-               -o pages.zip
-           fi
+      - name: Download latest non-expired artifacts
+        run: |
+          set -e
+          get_artifact_id() {
+            local name="$1"
+            curl -L -s \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
+              "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts?name=$name" \
+              | python3 -c "import sys, json; data = json.load(sys.stdin); artifacts = data.get('artifacts', []); valid = [a for a in artifacts if not a.get('expired', False)]; valid.sort(key=lambda x: x['created_at'], reverse=True); print(valid[0]['id'] if valid else '')"
+          }
 
-       - name: Unpack artifacts if they exist
-         run: |
-           if [ -f artifacts.zip ]; then
-             mkdir -p allure-results
-             unzip artifacts.zip -d allure-results
-           else
-             echo "artifacts.zip не загружен, создаём пустую директорию allure-results"
-             mkdir -p allure-results
-           fi
-           if [ -f pages.zip ]; then
-             mkdir -p old_pages pages_history
-             unzip pages.zip -d old_pages
-             if [ -f old_pages/artifact.tar ]; then
-               tar -xvf old_pages/artifact.tar -C pages_history
-             else
-               echo "В pages.zip нет artifact.tar, пропускаем"
-             fi
-           else
-             mkdir -p pages_history
-           fi
+          ALLURE_ID=$(get_artifact_id "allure-results")
+          if [ -z "$ALLURE_ID" ]; then
+            echo "Нет актуальных (неистекших) артефактов allure-results."
+            mkdir -p allure-results
+          else
+            echo "Найден неистекший allure-results с ID: $ALLURE_ID"
+            curl -L \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
+              "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts/$ALLURE_ID/zip" \
+              -o artifacts.zip
+            # Проверяем, что скачали действительно zip
+            if ! file artifacts.zip | grep -q "Zip archive"; then
+              echo "Ошибка: artifacts.zip не является zip-архивом. Удаляем."
+              rm artifacts.zip
+            fi
+          fi
 
-       - name: Copy history if available
-         run: |
-           if [ -d pages_history/history ] && [ "$(ls -A pages_history/history)" ]; then
-             cp pages_history/history/* allure-results/ 2>/dev/null || true
-             cp -r pages_history/history allure-results/ 2>/dev/null || true
-           else
-             echo "Нет истории для копирования"
-           fi
-       - name: Store allure history
-         uses: actions/upload-artifact@v4
-         with:
-           name: allure-history
-           path: allure-results
-           retention-days: 1
+          PAGES_ID=$(get_artifact_id "github-pages")
+          if [ -z "$PAGES_ID" ]; then
+            echo "Нет актуальных артефактов github-pages."
+            mkdir -p pages_history
+          else
+            echo "Найден неистекший github-pages с ID: $PAGES_ID"
+            curl -L \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
+              "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts/$PAGES_ID/zip" \
+              -o pages.zip
+            if ! file pages.zip | grep -q "Zip archive"; then
+              echo "Ошибка: pages.zip не является zip-архивом. Удаляем."
+              rm pages.zip
+            fi
+          fi
+
+      - name: Unpack artifacts
+        run: |
+          if [ -f artifacts.zip ]; then
+            mkdir -p allure-results
+            unzip artifacts.zip -d allure-results
+          else
+            echo "artifacts.zip отсутствует, создаём пустую allure-results"
+            mkdir -p allure-results
+          fi
+
+          if [ -f pages.zip ]; then
+            mkdir -p old_pages pages_history
+            unzip pages.zip -d old_pages
+            if [ -f old_pages/artifact.tar ]; then
+              tar -xvf old_pages/artifact.tar -C pages_history
+            else
+              echo "В pages.zip нет artifact.tar, пропускаем"
+            fi
+          else
+            echo "pages.zip отсутствует, создаём пустую pages_history"
+            mkdir -p pages_history
+          fi
+
+      - name: Copy history if exists
+        run: |
+          if [ -d pages_history/history ] && [ "$(ls -A pages_history/history)" ]; then
+            cp pages_history/history/* allure-results/ 2>/dev/null || true
+            cp -r pages_history/history allure-results/ 2>/dev/null || true
+            echo "История скопирована"
+          else
+            echo "Нет истории для копирования"
+          fi
+
+      - name: Store allure history
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-history
+          path: allure-results
+          retention-days: 1
 
   run-tests:
     runs-on: ubuntu-latest

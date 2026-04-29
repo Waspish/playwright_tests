@@ -1,6 +1,6 @@
 name: Python autotests
 
-on: 
+on:
   workflow_dispatch:
     inputs:
       deployment_target:
@@ -14,209 +14,122 @@ on:
           - extended
           - all
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   pages: write
   contents: read
   id-token: write
+  actions: read   # для скачивания артефактов через GITHUB_TOKEN
 
 jobs:
-  download-history:
-    runs-on: ubuntu-latest
-    name: Download history
-    permissions:
-      actions: read
-    steps:
-      - name: Set up Python environment
-        uses: actions/setup-python@v5
-        with:
-          python-version: 'pypy3.10'
-
-      - name: Download latest non-expired artifacts
-        run: |
-          set -e
-          get_artifact_id() {
-            local name="$1"
-            curl -L -s \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts?name=$name" \
-              | python3 -c "import sys, json; data = json.load(sys.stdin); artifacts = data.get('artifacts', []); valid = [a for a in artifacts if not a.get('expired', False)]; valid.sort(key=lambda x: x['created_at'], reverse=True); print(valid[0]['id'] if valid else '')"
-          }
-
-          ALLURE_ID=$(get_artifact_id "allure-results")
-          if [ -z "$ALLURE_ID" ]; then
-            echo "Нет актуальных (неистекших) артефактов allure-results."
-            mkdir -p allure-results
-          else
-            echo "Найден неистекший allure-results с ID: $ALLURE_ID"
-            curl -L \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts/$ALLURE_ID/zip" \
-              -o artifacts.zip
-            # Проверяем, что скачали действительно zip
-            if ! file artifacts.zip | grep -q "Zip archive"; then
-              echo "Ошибка: artifacts.zip не является zip-архивом. Удаляем."
-              rm artifacts.zip
-            fi
-          fi
-
-          PAGES_ID=$(get_artifact_id "github-pages")
-          if [ -z "$PAGES_ID" ]; then
-            echo "Нет актуальных артефактов github-pages."
-            mkdir -p pages_history
-          else
-            echo "Найден неистекший github-pages с ID: $PAGES_ID"
-            curl -L \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
-              "https://api.github.com/repos/Waspish/playwright_tests/actions/artifacts/$PAGES_ID/zip" \
-              -o pages.zip
-            if ! file pages.zip | grep -q "Zip archive"; then
-              echo "Ошибка: pages.zip не является zip-архивом. Удаляем."
-              rm pages.zip
-            fi
-          fi
-
-      - name: Unpack artifacts
-        run: |
-          if [ -f artifacts.zip ]; then
-            mkdir -p allure-results
-            unzip artifacts.zip -d allure-results
-          else
-            echo "artifacts.zip отсутствует, создаём пустую allure-results"
-            mkdir -p allure-results
-          fi
-
-          if [ -f pages.zip ]; then
-            mkdir -p old_pages pages_history
-            unzip pages.zip -d old_pages
-            if [ -f old_pages/artifact.tar ]; then
-              tar -xvf old_pages/artifact.tar -C pages_history
-            else
-              echo "В pages.zip нет artifact.tar, пропускаем"
-            fi
-          else
-            echo "pages.zip отсутствует, создаём пустую pages_history"
-            mkdir -p pages_history
-          fi
-
-      - name: Copy history if exists
-        run: |
-          if [ -d pages_history/history ] && [ "$(ls -A pages_history/history)" ]; then
-            cp pages_history/history/* allure-results/ 2>/dev/null || true
-            cp -r pages_history/history allure-results/ 2>/dev/null || true
-            echo "История скопирована"
-          else
-            echo "Нет истории для копирования"
-          fi
-          
-      - name: Ensure allure-results not empty
-        run: |
-          if [ -z "$(ls -A allure-results)" ]; then
-            touch allure-results/.placeholder
-            echo "Папка была пуста, добавлен файл-заглушка .placeholder"
-          else
-            echo "Папка не пуста, пропускаем создание заглушки"
-          fi
-        
-      - name: Store allure history
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-history
-          path: allure-results
-          retention-days: 1
-          if-no-files-found: warn
-
   run-tests:
     runs-on: ubuntu-latest
     name: Run autotests
-    needs: download-history
-
     steps:
       - name: Checkout autotests
         uses: actions/checkout@v4
-      - name: Set up Python environment
-        uses: actions/setup-python@v6 
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: 'pypy3.10' 
+          python-version: 'pypy3.10'
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Make allure results dir
-        run: mkdir allure-results
-      - name: Download artifact
-        uses: actions/download-artifact@v6
-        with: 
-          name: allure-history
-          path: allure-results
-        continue-on-error: true
       - name: Install Playwright
         run: playwright install
-      - name: Run all tests
-        if: "github.event.inputs.deployment_target == 'all'"
-        run: pytest --alluredir=allure-results
+      - name: Create allure-results
+        run: mkdir -p allure-results
+      - name: Run tests
+        run: |
+          MARKER="${{ github.event.inputs.deployment_target }}"
+          if [ "$MARKER" = "all" ]; then
+            pytest --alluredir=allure-results
+          else
+            pytest -m "$MARKER" --alluredir=allure-results
+          fi
         continue-on-error: true
-      - name: Run smoke tests
-        if: "github.event.inputs.deployment_target == 'smoke'"
-        run: pytest -m smoke --alluredir=allure-results
-        continue-on-error: true
-      - name: Run regression tests
-        if: "github.event.inputs.deployment_target == 'regression'"
-        run: pytest -m regression --alluredir=allure-results
-        continue-on-error: true
-      - name: Run extended tests
-        if: "github.event.inputs.deployment_target == 'extended'"
-        run: pytest -m extended --alluredir=allure-results
-        continue-on-error: true
-      - name: Upload allure results
+      - name: Upload raw results
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
-          retention-days: 1
+          retention-days: 30
 
   generate-report:
     runs-on: ubuntu-latest
-    name: Generate report
+    name: Generate and publish report
     needs: run-tests
     steps:
-      - name: Download all workflow run artifacts
-        uses: actions/download-artifact@v6
+      - name: Download raw results
+        uses: actions/download-artifact@v4
         with:
           name: allure-results
           path: allure-results
+
+      - name: Download previous Allure history (if exists)
+        run: |
+          ARTIFACT_ID=$(curl -L -s \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts?name=allure-history" \
+            | python3 -c "import sys, json; data = json.load(sys.stdin); artifacts = data.get('artifacts', []); valid = [a for a in artifacts if not a.get('expired', False)]; valid.sort(key=lambda x: x['created_at'], reverse=True); print(valid[0]['id'] if valid else '')")
+          
+          if [ -n "$ARTIFACT_ID" ]; then
+            echo "Найден предыдущий артефакт истории с ID: $ARTIFACT_ID"
+            curl -L -s \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip" \
+              -o history.zip
+            unzip -q history.zip -d history_extracted
+            HISTORY_DIR=$(find history_extracted -type d -name "history" | head -1)
+            if [ -n "$HISTORY_DIR" ]; then
+              cp -r "$HISTORY_DIR" allure-results/
+              echo "История подложена в allure-results/history"
+            else
+              echo "В артефакте не найдена папка 'history'"
+            fi
+            rm -rf history_extracted history.zip
+          else
+            echo "Предыдущая история не найдена, начинаем с нуля"
+          fi
+
       - name: Install Java
         uses: actions/setup-java@v5
         with:
           distribution: 'microsoft'
           java-version: '25'
       - name: Install Allure
-        run: sudo wget https://github.com/allure-framework/allure2/releases/download/2.34.1/allure-2.34.1.tgz && sudo tar -xzf allure-2.34.1.tgz -C /opt/ && sudo ln -s /opt/allure-2.34.1/bin/allure /usr/bin/allure 
-      - name: Generate report
-        run: allure generate -c allure-results -o _site
-      - name: Save allure report
+        run: |
+          wget -q https://github.com/allure-framework/allure2/releases/download/2.34.1/allure-2.34.1.tgz
+          sudo tar -xzf allure-2.34.1.tgz -C /opt/
+          sudo ln -s /opt/allure-2.34.1/bin/allure /usr/bin/allure
+      - name: Generate Allure report
+        run: allure generate -c allure-results -o _site --clean
+      - name: Save report as artifact
         uses: actions/upload-artifact@v4
         with:
           name: _site
           path: _site
-          retention-days: 1
+          retention-days: 30
+      - name: Save history for future runs
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-history
+          path: _site/history
+          retention-days: 90
 
   publish-report:
     runs-on: ubuntu-latest
     needs: generate-report
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v6
+      - name: Download report artifact
+        uses: actions/download-artifact@v4
         with:
           name: _site
           path: _site
-      - name: Ls before upload
-        run: ls
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v5

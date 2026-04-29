@@ -83,12 +83,21 @@ jobs:
               "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip" \
               -o history.zip
             unzip -q history.zip -d history_extracted
+            
+            # Сначала ищем папку 'history' в любом месте
             HISTORY_DIR=$(find history_extracted -type d -name "history" | head -1)
             if [ -n "$HISTORY_DIR" ]; then
               cp -r "$HISTORY_DIR" allure-results/
-              echo "История подложена в allure-results/history"
+              echo "История подложена из папки $HISTORY_DIR"
             else
-              echo "В артефакте не найдена папка 'history'"
+              # Если папки 'history' нет, но есть файлы — считаем их файлами истории
+              if find history_extracted -type f | read; then
+                mkdir -p allure-results/history
+                cp -r history_extracted/* allure-results/history/
+                echo "Файлы истории скопированы (создана папка history)"
+              else
+                echo "В артефакте не найдены ни папка 'history', ни файлы истории"
+              fi
             fi
             rm -rf history_extracted history.zip
           else

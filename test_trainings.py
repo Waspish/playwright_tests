@@ -22,7 +22,7 @@ def apply_stealth(page):
 
 @pytest.mark.smoke
 def test_chrome(page: Page):
-    apply_stealth(page)
+    # apply_stealth(page)
     page.goto('https://www.google.com/')
     search_field = page.get_by_role('combobox')
     search_field.fill('cat')
